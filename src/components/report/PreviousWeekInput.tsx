@@ -14,8 +14,23 @@ interface PreviousWeekInputProps {
 export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: PreviousWeekInputProps) {
   const [values, setValues] = useState<PreviousWeekSLA>(initialValues);
 
+  const calculateTotal = (teamValues: Record<string, number | null>): number | null => {
+    const validValues = Object.values(teamValues).filter(
+      (v): v is number => v !== null && v !== undefined && !isNaN(v)
+    );
+    if (validValues.length === 0) return null;
+    const sum = validValues.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / validValues.length) * 100) / 100;
+  };
+
   useEffect(() => {
-    setValues(initialValues);
+    const frTotal = initialValues.firstResponseTotal ?? calculateTotal(initialValues.firstResponse);
+    const rtTotal = initialValues.resolutionTimeTotal ?? calculateTotal(initialValues.resolutionTime);
+    setValues({
+      ...initialValues,
+      firstResponseTotal: frTotal,
+      resolutionTimeTotal: rtTotal,
+    });
   }, [initialValues]);
 
   const handleChange = (
@@ -23,17 +38,26 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
     team: string,
     rawValue: string
   ) => {
-    const newValues = { ...values };
+    const newSectionValues = { ...values[section] };
     const cleaned = rawValue.trim().replace('%', '');
 
-    if (cleaned === '' || cleaned.toLowerCase() === 'n/a') {
-      newValues[section] = { ...newValues[section], [team]: null };
+    if (cleaned === '' || cleaned.toLowerCase() === 'n/a' || cleaned === '-') {
+      newSectionValues[team] = null;
     } else {
       const num = parseFloat(cleaned);
       if (!isNaN(num) && num >= 0 && num <= 100) {
-        newValues[section] = { ...newValues[section], [team]: num };
+        newSectionValues[team] = num;
       }
     }
+
+    const totalKey = section === 'firstResponse' ? 'firstResponseTotal' : 'resolutionTimeTotal';
+    const autoTotal = calculateTotal(newSectionValues);
+
+    const newValues: PreviousWeekSLA = {
+      ...values,
+      [section]: newSectionValues,
+      [totalKey]: autoTotal,
+    };
 
     setValues(newValues);
     onSave(newValues);
@@ -46,7 +70,7 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
     const newValues = { ...values };
     const cleaned = rawValue.trim().replace('%', '');
 
-    if (cleaned === '' || cleaned.toLowerCase() === 'n/a') {
+    if (cleaned === '' || cleaned.toLowerCase() === 'n/a' || cleaned === '-') {
       newValues[section] = null;
     } else {
       const num = parseFloat(cleaned);
@@ -69,16 +93,15 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
       <div className="prevweek-header">
         <h2>Previous Week SLA Values</h2>
         <p className="prevweek-description">
-          These SLA pass rates were automatically calculated from the previous week's data found in your raw dataset.
-          You can review or adjust them if needed before generating the final report.
+          Please enter the SLA pass rates from the previous week's report.
+          The Total pass rate is automatically calculated based on the input data per team.
         </p>
       </div>
 
       <div className="prevweek-info-banner">
-        <span className="info-icon">✨</span>
+        <span className="info-icon">📊</span>
         <p>
-          Values are now fully automated! The system split your raw data into "Current Week" and "Previous Week"
-          based on the dates of the tickets, and calculated both SLAs automatically.
+          Enter the percentage values per team. The total will automatically calculate based on the inputted team percentages.
         </p>
       </div>
 
@@ -86,7 +109,7 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
         <table className="prevweek-table">
           <thead>
             <tr>
-              <th className="col-team">Team</th>
+              <th className="col-team">Final Team</th>
               <th className="col-sla" colSpan={1}>First Response (%)</th>
               <th className="col-sla" colSpan={1}>Resolution Time (%)</th>
             </tr>

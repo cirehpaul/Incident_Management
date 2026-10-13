@@ -14,6 +14,7 @@ import { ValidationSummaryView } from '@/components/validation/ValidationSummary
 import { RoutingPreview } from '@/components/routing/RoutingPreview';
 import { PreviousWeekInput } from '@/components/report/PreviousWeekInput';
 import { SLAReportTable } from '@/components/report/SLAReportTable';
+import { ExportDropdown } from '@/components/report/ExportDropdown';
 import { DetailModal } from '@/components/report/DetailModal';
 import { AgingReportWorkflow } from '@/components/aging/AgingReportWorkflow';
 
@@ -90,25 +91,7 @@ export default function HomePage() {
     const slaReport = calculateSLAReport(state.routedIncidents, REPORT_TEAMS);
     dispatch({ type: 'SET_SLA_REPORT', report: slaReport });
 
-    // Auto-calculate SLA for previous week if available
-    const { previousWeek } = splitIncidentsByWeek(state.routedIncidents);
-    const prevSLAReport = calculateSLAReport(previousWeek, REPORT_TEAMS);
-
-    const prevWeekData = {
-      firstResponse: {} as Record<string, number | null>,
-      resolutionTime: {} as Record<string, number | null>,
-      firstResponseTotal: prevSLAReport.firstResponseTotal.slaPassRate,
-      resolutionTimeTotal: prevSLAReport.resolutionTimeTotal.slaPassRate,
-    };
-
-    for (const team of REPORT_TEAMS) {
-      const frTeam = prevSLAReport.firstResponse.find((t) => t.teamName === team);
-      const rtTeam = prevSLAReport.resolutionTime.find((t) => t.teamName === team);
-      prevWeekData.firstResponse[team] = frTeam ? frTeam.slaPassRate : null;
-      prevWeekData.resolutionTime[team] = rtTeam ? rtTeam.slaPassRate : null;
-    }
-
-    dispatch({ type: 'SET_PREVIOUS_WEEK', previousWeek: prevWeekData });
+    // Transition to the manual input step for previous week SLA.
     dispatch({ type: 'SET_STEP', step: 'previous-week' });
   }, [state.routedIncidents]);
 
@@ -360,11 +343,13 @@ export default function HomePage() {
                 ← Back
               </button>
               <div className="report-export-buttons">
+                <ExportDropdown
+                  incidents={state.routedIncidents}
+                  reportData={state.reportData}
+                  baseFilename="SMAC_Incident_Report"
+                />
                 <button className="btn btn-export" onClick={handleExportPng}>
                   📷 Download PNG
-                </button>
-                <button className="btn btn-export" onClick={() => window.print()}>
-                  🖨️ Print / PDF
                 </button>
               </div>
             </div>

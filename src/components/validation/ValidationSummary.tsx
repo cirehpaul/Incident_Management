@@ -59,6 +59,22 @@ export function ValidationSummaryView({ summary, onProceed, onBack }: Validation
         </div>
       </div>
 
+      {summary.detectedSubCategories && summary.detectedSubCategories.length > 0 && (
+        <div className="validation-section">
+          <h3>Detected Subcategories ({summary.detectedSubCategories.length})</h3>
+          <div className="tag-list">
+            {summary.detectedSubCategories.slice(0, 25).map((sub) => (
+              <span key={sub} className="tag tag-category" style={{ opacity: 0.9 }}>
+                {sub}
+              </span>
+            ))}
+            {summary.detectedSubCategories.length > 25 && (
+              <span className="tag tag-category">+{summary.detectedSubCategories.length - 25} more</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Errors */}
       {summary.errors.length > 0 && (
         <div className="validation-section">

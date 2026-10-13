@@ -34,8 +34,8 @@ export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
   }
 
   return (
-    <div className="aging-report-wrapper" ref={reportRef} id="aging-report-canvas">
-      <div className="aging-report-canvas">
+    <div className="aging-report-wrapper" ref={reportRef}>
+      <div className="aging-report-canvas" id="aging-report-canvas">
 
         {/* ═══════ TABLE 1: SLA COMPLIANCE ═══════ */}
         <div className="aging-section-header aging-sla-header">
@@ -46,7 +46,7 @@ export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
         <table className="aging-sla-table">
           <thead>
             <tr className="aging-header-groups">
-              <th className="aging-col-tech" rowSpan={2}>Technician</th>
+              <th className="aging-col-tech" rowSpan={2}>Final Team</th>
               <th className="aging-col-total-irs" rowSpan={2}>Total # of IRs</th>
               <th className="aging-header-fr" colSpan={3}>First Response</th>
               <th className="aging-header-rt" colSpan={3}>Resolution Time</th>
@@ -54,10 +54,10 @@ export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
             <tr className="aging-header-sub">
               <th className="aging-sub-failed">Failed</th>
               <th className="aging-sub-passed">Passed</th>
-              <th className="aging-sub-sla">SLA Pass Rate</th>
+              <th className="aging-sub-sla">SLA Pass Rate this week</th>
               <th className="aging-sub-failed">Failed</th>
               <th className="aging-sub-passed">Passed</th>
-              <th className="aging-sub-sla">SLA Pass Rate</th>
+              <th className="aging-sub-sla">SLA Pass Rate this week</th>
             </tr>
           </thead>
           <tbody>
@@ -135,7 +135,7 @@ export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
         <table className="aging-dist-table">
           <thead>
             <tr className="aging-dist-header-groups">
-              <th className="aging-col-tech" rowSpan={2}>TECHNICIAN</th>
+              <th className="aging-col-tech" rowSpan={2}>FINAL TEAM</th>
               <th className="aging-dist-main-header" colSpan={6}>Aging Incident Report</th>
               <th className="aging-dist-this-week" rowSpan={2}>
                 <div className="aging-week-label">Total Aging IRs</div>

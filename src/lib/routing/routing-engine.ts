@@ -1,5 +1,6 @@
 import type { Incident } from '@/types/incident';
 import type { RoutingRule, RoutingConfig, RoutingResult, RoutingSummary } from '@/types/routing';
+import { lookupRoutingMatrix } from './routing-matrix';
 
 // Technician
 export const REPORT_TEAMS = [
@@ -18,7 +19,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     description: 'Facility-related incidents from ISS teams are reassigned to ECS ADMIN',
     priority: 1,
     conditions: {
-      sourceTeams: ['ISS Binondo', 'ISS MT'],
+      sourceTeams: ['ISS Binondo', 'ISS MT', 'ECS ISS Binondo', 'ECS ISS'],
       categories: ['Facility'],
       categoryMatch: 'contains',
     },
@@ -43,7 +44,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     description: 'ISMS/Security incidents are assigned to ECS ISMS Support',
     priority: 3,
     conditions: {
-      categories: ['ISMS', 'Security', 'Information Security'],
+      categories: ['ISMS', 'Information Security'],
       categoryMatch: 'contains',
     },
     assignedTeam: 'ECS ISMS Support',
@@ -79,11 +80,17 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
 export const DEFAULT_TEAM_MAPPING: Record<string, string> = {
   'ISS Binondo': 'ECS ISS',
   'ISS MT': 'ECS ISS',
+  'ECS ISS Binondo': 'ECS ISS',
+  'ECS ISS': 'ECS ISS',
   'ECS HR': 'ECS HR',
   'ECS SDS': 'ECS SDS',
   'ECS PSD': 'ECS PSD',
+  'ECS PSD Group': 'ECS PSD',
   'ECS ISMS Support': 'ECS ISMS Support',
+  'ECS ISMS Support Group': 'ECS ISMS Support',
   'ECS HRAD': 'ECS ADMIN',
+  'ECS HRAD Group': 'ECS ADMIN',
+  'ECS ADMIN': 'ECS ADMIN',
 };
 
 export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
@@ -116,14 +123,60 @@ function matchesRule(incident: Incident, rule: RoutingRule): boolean {
     if (!categoryMatch) return false;
   }
 
+  if (conditions.subCategories && conditions.subCategories.length > 0) {
+    const subLower = (incident.subCategory || '').toLowerCase();
+    const subMatch = conditions.subCategories.some((sub) => {
+      const targetLower = sub.toLowerCase();
+      return subLower.includes(targetLower);
+    });
+    if (!subMatch) return false;
+  }
+
+  if (conditions.items && conditions.items.length > 0) {
+    const itemLower = (incident.item || '').toLowerCase();
+    const itemMatch = conditions.items.some((itm) => {
+      const targetLower = itm.toLowerCase();
+      return itemLower.includes(targetLower);
+    });
+    if (!itemMatch) return false;
+  }
+
   return true;
 }
 
 export function resolveAssignedTeam(
   incident: Incident,
-  config: RoutingConfig
+  config: RoutingConfig = DEFAULT_ROUTING_CONFIG
 ): RoutingResult {
+  // 1. Matrix matching (highest fidelity: Category > Subcategory > Item)
+  const matrixMatch = lookupRoutingMatrix(
+    incident.category,
+    incident.subCategory,
+    incident.item
+  );
 
+  if (matrixMatch) {
+    const finalAssignedTeam = matrixMatch.targetReportTeam;
+    const wasReassigned = finalAssignedTeam !== incident.sourceTeam;
+    const itemDetail = matrixMatch.item && matrixMatch.item !== 'Not Applicable' ? ` > ${matrixMatch.item}` : '';
+    const routingReason = `${matrixMatch.autoAssignedGroup} (${matrixMatch.subCategory}${itemDetail})`;
+
+    return {
+      requestId: incident.requestId,
+      sourceTeam: incident.sourceTeam,
+      category: incident.category,
+      subCategory: incident.subCategory,
+      item: incident.item,
+      autoAssignedGroup: matrixMatch.autoAssignedGroup,
+      originalAssignment: incident.sourceTeam,
+      finalAssignedTeam,
+      routingReason,
+      wasReassigned,
+      matchedRuleId: `matrix-${matrixMatch.autoAssignedGroup}`,
+    };
+  }
+
+  // 2. Custom Configured Rules
   const sortedRules = [...config.rules].sort((a, b) => a.priority - b.priority);
 
   for (const rule of sortedRules) {
@@ -133,6 +186,9 @@ export function resolveAssignedTeam(
         requestId: incident.requestId,
         sourceTeam: incident.sourceTeam,
         category: incident.category,
+        subCategory: incident.subCategory,
+        item: incident.item,
+        autoAssignedGroup: rule.assignedTeam,
         originalAssignment: incident.sourceTeam,
         finalAssignedTeam: rule.assignedTeam,
         routingReason: rule.name,
@@ -142,6 +198,7 @@ export function resolveAssignedTeam(
     }
   }
 
+  // 3. Default Team Mapping
   const mappedTeam = config.defaultTeamMapping[incident.sourceTeam];
   if (mappedTeam) {
     const wasReassigned = mappedTeam !== incident.sourceTeam;
@@ -149,6 +206,9 @@ export function resolveAssignedTeam(
       requestId: incident.requestId,
       sourceTeam: incident.sourceTeam,
       category: incident.category,
+      subCategory: incident.subCategory,
+      item: incident.item,
+      autoAssignedGroup: mappedTeam,
       originalAssignment: incident.sourceTeam,
       finalAssignedTeam: mappedTeam,
       routingReason: 'Default team mapping',
@@ -156,6 +216,7 @@ export function resolveAssignedTeam(
     };
   }
 
+  // 4. Fuzzy Match
   const sourceUpper = incident.sourceTeam.toUpperCase();
   const matchedReportTeam = config.reportTeams.find(
     (t) => sourceUpper.includes(t.replace('ECS ', '').toUpperCase())
@@ -166,6 +227,9 @@ export function resolveAssignedTeam(
       requestId: incident.requestId,
       sourceTeam: incident.sourceTeam,
       category: incident.category,
+      subCategory: incident.subCategory,
+      item: incident.item,
+      autoAssignedGroup: matchedReportTeam,
       originalAssignment: incident.sourceTeam,
       finalAssignedTeam: matchedReportTeam,
       routingReason: 'Fuzzy team match',
@@ -173,10 +237,14 @@ export function resolveAssignedTeam(
     };
   }
 
+  // 5. Ultimate Fallback
   return {
     requestId: incident.requestId,
     sourceTeam: incident.sourceTeam,
     category: incident.category,
+    subCategory: incident.subCategory,
+    item: incident.item,
+    autoAssignedGroup: 'ECS ISS',
     originalAssignment: incident.sourceTeam,
     finalAssignedTeam: 'ECS ISS',
     routingReason: 'No matching rule — defaulted to ECS ISS',

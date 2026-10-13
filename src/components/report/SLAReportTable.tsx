@@ -27,8 +27,8 @@ export function SLAReportTable({ data, onCellClick }: SLAReportTableProps) {
   };
 
   return (
-    <div className="report-wrapper" ref={reportRef} id="sla-report-canvas">
-      <div className="report-canvas">
+    <div className="report-wrapper" ref={reportRef}>
+      <div className="report-canvas" id="sla-report-canvas">
         {/* Report Title */}
         <div className="report-title-bar">
           <h1 className="report-main-title">Closed Incident Weekly Report</h1>
@@ -41,7 +41,7 @@ export function SLAReportTable({ data, onCellClick }: SLAReportTableProps) {
             {/* Top Header Row — Groups */}
             <tr className="report-header-groups">
               <th className="col-technician header-technician" rowSpan={2}>
-                Technician
+                Final Team
               </th>
               <th className="header-first-response" colSpan={5}>
                 First Response
@@ -57,14 +57,14 @@ export function SLAReportTable({ data, onCellClick }: SLAReportTableProps) {
               <th className="header-total">Total # of IRs</th>
               <th className="header-failed">Failed</th>
               <th className="header-passed">Passed</th>
-              <th className="header-sla-rate">SLA Pass Rate</th>
+              <th className="header-sla-rate">SLA Pass Rate this week</th>
               <th className="header-sla-prev">SLA Pass Rate as of last week</th>
 
               {/* Resolution Time columns */}
               <th className="header-total">Total # of IRs</th>
               <th className="header-failed">Failed</th>
               <th className="header-passed">Passed</th>
-              <th className="header-sla-rate">SLA Pass Rate</th>
+              <th className="header-sla-rate">SLA Pass Rate this week</th>
               <th className="header-sla-prev">SLA Pass Rate as of last week</th>
             </tr>
           </thead>

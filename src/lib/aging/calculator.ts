@@ -1,7 +1,3 @@
-/**
- * Aging Calculator
- * Classifies open/pending incidents into aging buckets and computes SLA compliance
- */
 
 import type { Incident } from '@/types/incident';
 import type {
@@ -14,9 +10,9 @@ import type {
 import { AGING_BUCKET_ORDER } from '@/types/aging';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
 
-// ── Aging Bucket Classification ──────────────────────────────────
 
-/** Determine which aging bucket an incident falls into based on its age in calendar days */
+
+// Determine which aging bucket an incident falls into based on its age in calendar days
 function classifyAge(createdTime: Date, referenceDate: Date): AgingBucket {
   const diffMs = referenceDate.getTime() - createdTime.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
@@ -29,7 +25,7 @@ function classifyAge(createdTime: Date, referenceDate: Date): AgingBucket {
   return 'sameday';
 }
 
-/** Filter incidents to only open/pending (not completed) */
+// Filter incidents to only open/pending (not completed) 
 export function filterOpenIncidents(incidents: Incident[]): Incident[] {
   return incidents.filter((inc) => {
     // If there's no completedTime, the incident is still open
@@ -45,8 +41,7 @@ export function filterOpenIncidents(incidents: Incident[]): Incident[] {
   });
 }
 
-// ── Aging Distribution Calculation ───────────────────────────────
-
+// Aging Distribution Calculation 
 function createEmptyBuckets(): Record<AgingBucket, number> {
   return {
     '>1month': 0,
@@ -110,53 +105,12 @@ export function calculateAgingDistribution(
   return results;
 }
 
-// ── SLA Compliance Calculation ───────────────────────────────────
+//SLA Compliance Calculation
 
-// SLA thresholds (in minutes)
-const SLA_THRESHOLDS = {
-  firstResponse: {
-    High: 15,
-    Medium: 30,
-    Low: 60,
-    default: 30,
-  },
-  resolution: {
-    High: 120,
-    Medium: 240,
-    Low: 480,
-    default: 240,
-  },
-};
-
-function getSLAThreshold(priority: string | undefined, type: 'firstResponse' | 'resolution'): number {
-  if (!priority) return SLA_THRESHOLDS[type].default;
-  const p = priority.toLowerCase();
-  if (p.includes('high') || p.includes('urgent') || p.includes('1')) return SLA_THRESHOLDS[type].High;
-  if (p.includes('low') || p.includes('3')) return SLA_THRESHOLDS[type].Low;
-  return SLA_THRESHOLDS[type].Medium;
-}
-
-function getBusinessMinutes(start: Date, end: Date): number {
-  if (start >= end) return 0;
-  let totalMinutes = 0;
-  const current = new Date(start.getTime());
-
-  while (current.getTime() < end.getTime()) {
-    const day = current.getDay();
-    if (day !== 0 && day !== 6) {
-      const startOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 8, 30, 0);
-      const endOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 17, 30, 0);
-      const effectiveStart = current > startOfDay ? current : startOfDay;
-      const effectiveEnd = end < endOfDay ? end : endOfDay;
-      if (effectiveStart < effectiveEnd) {
-        totalMinutes += (effectiveEnd.getTime() - effectiveStart.getTime()) / 60000;
-      }
-    }
-    current.setDate(current.getDate() + 1);
-    current.setHours(0, 0, 0, 0);
-  }
-  return totalMinutes;
-}
+import {
+  evaluateFirstResponseOverdue,
+  evaluateResolutionOverdue,
+} from '@/lib/sla/calculator';
 
 export function calculateAgingSLA(
   incidents: Incident[],
@@ -187,32 +141,17 @@ export function calculateAgingSLA(
     const rtPassedIds: string[] = [];
 
     for (const inc of teamIncidents) {
-      if (!inc.createdTime) {
-        frPassedIds.push(inc.requestId);
-        rtPassedIds.push(inc.requestId);
-        continue;
-      }
-
       // First Response SLA
-      const frThreshold = getSLAThreshold(inc.priority, 'firstResponse');
-      const frEnd = inc.respondedDate || referenceDate;
-      let frElapsed: number;
-      if (team === 'ECS ISS') {
-        frElapsed = (frEnd.getTime() - inc.createdTime.getTime()) / 60000;
-      } else {
-        frElapsed = getBusinessMinutes(inc.createdTime, frEnd);
-      }
-      if (frElapsed > frThreshold) {
+      const frFailed = evaluateFirstResponseOverdue(inc, team, referenceDate);
+      if (frFailed) {
         frFailedIds.push(inc.requestId);
       } else {
         frPassedIds.push(inc.requestId);
       }
 
-      // Resolution Time SLA (24/7 for all teams)
-      const rtThreshold = getSLAThreshold(inc.priority, 'resolution');
-      const rtEnd = inc.completedTime || referenceDate;
-      const rtElapsed = (rtEnd.getTime() - inc.createdTime.getTime()) / 60000;
-      if (rtElapsed > rtThreshold) {
+      // Resolution Time SLA
+      const rtFailed = evaluateResolutionOverdue(inc, referenceDate);
+      if (rtFailed) {
         rtFailedIds.push(inc.requestId);
       } else {
         rtPassedIds.push(inc.requestId);
@@ -268,7 +207,7 @@ export function calculateAgingSLA(
   return { rows, totals };
 }
 
-// ── Previous Week Auto-Calculation ───────────────────────────────
+//Previous Week Auto-Calculation 
 
 export function calculatePreviousWeekAging(
   incidents: Incident[],
@@ -291,14 +230,14 @@ export function calculatePreviousWeekAging(
   };
 }
 
-// ── Utility ──────────────────────────────────────────────────────
+// Utility
 
 export function formatSLAPercentage(value: number | null): string {
   if (value === null) return 'N/A';
   return `${value.toFixed(2)}%`;
 }
 
-/** Split open incidents into this-week and last-week snapshots */
+// Split open incidents into this-week and last-week
 export function splitAgingByWeek(
   incidents: Incident[]
 ): { currentWeek: Incident[]; previousWeek: Incident[] } {

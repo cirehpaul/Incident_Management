@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { Account } from '@/lib/auth';
 import { findAccountByPin } from '@/lib/auth';
 
@@ -14,6 +14,12 @@ export function PinLogin({ onLogin }: PinLoginProps) {
   const [pin, setPin] = useState('');
   const [shake, setShake] = useState(false);
   const [error, setError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus the hidden password input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleKey = useCallback(
     (digit: string) => {
@@ -50,20 +56,36 @@ export function PinLogin({ onLogin }: PinLoginProps) {
     setTimeout(() => setShake(false), 600);
   }
 
-  // Allow pressing Enter key
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') handleSubmit();
-      else if (e.key === 'Backspace') handleBackspace();
-      else if (/^[0-9]$/.test(e.key)) handleKey(e.key);
+  // Handle native password input changes
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/\D/g, '').slice(0, MAX_PIN_LENGTH);
+      setError('');
+      setPin(value);
     },
-    [handleSubmit, handleBackspace, handleKey]
+    []
   );
+
+  // Handle keyboard events on the password input
+  const handleInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit]
+  );
+
+  // Re-focus the hidden input when clicking keypad buttons
+  const focusInput = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   return (
-    <div className="pin-overlay" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div className="pin-overlay" onClick={focusInput}>
       <div className="pin-card">
         {/* Brand */}
         <div className="pin-brand">
@@ -73,6 +95,30 @@ export function PinLogin({ onLogin }: PinLoginProps) {
           <h1 className="pin-title">SMAC REPORTING</h1>
           <p className="pin-subtitle">Enter your PIN to continue</p>
         </div>
+
+        {/* Hidden password input for native keyboard/autofill support */}
+        <input
+          ref={inputRef}
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={MAX_PIN_LENGTH}
+          value={pin}
+          onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
+          autoComplete="off"
+          aria-label="PIN input"
+          className="pin-hidden-input"
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            width: '1px',
+            height: '1px',
+            border: 'none',
+            outline: 'none',
+            pointerEvents: 'none',
+          }}
+        />
 
         {/* PIN Dots */}
         <div className={`pin-dots ${shake ? 'pin-shake' : ''}`}>
@@ -93,7 +139,7 @@ export function PinLogin({ onLogin }: PinLoginProps) {
             <button
               key={d}
               className="pin-key"
-              onClick={() => handleKey(d)}
+              onClick={() => { handleKey(d); focusInput(); }}
               type="button"
             >
               {d}
@@ -103,7 +149,7 @@ export function PinLogin({ onLogin }: PinLoginProps) {
           {/* Bottom row: backspace | 0 | submit */}
           <button
             className="pin-key pin-key--danger"
-            onClick={handleBackspace}
+            onClick={() => { handleBackspace(); focusInput(); }}
             type="button"
             aria-label="Backspace"
           >
@@ -116,7 +162,7 @@ export function PinLogin({ onLogin }: PinLoginProps) {
 
           <button
             className="pin-key"
-            onClick={() => handleKey('0')}
+            onClick={() => { handleKey('0'); focusInput(); }}
             type="button"
           >
             0
@@ -124,7 +170,7 @@ export function PinLogin({ onLogin }: PinLoginProps) {
 
           <button
             className="pin-key pin-key--primary"
-            onClick={handleSubmit}
+            onClick={() => { handleSubmit(); focusInput(); }}
             type="button"
             aria-label="Login"
           >

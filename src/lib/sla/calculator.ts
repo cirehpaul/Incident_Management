@@ -1,33 +1,100 @@
 import type { Incident } from '@/types/incident';
-import type { TeamSLAResult, SLAReport } from '@/types/sla';
+import type { TeamSLAResult, SLAReport, WeeklyCompletion } from '@/types/sla';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
 
-// SLA TIME BASED IN MINUTES
-const SLA_THRESHOLDS = {
-  firstResponse: {
-    High: 15,    // 15 mins
-    Medium: 30,  // 30 mins
-    Low: 60,     // 1 hour
-    default: 30
-  },
-  resolution: {
-    High: 120,   // 2 hours
-    Medium: 240, // 4 hours
-    Low: 480,    // 8 hours
-    default: 240
-  }
-};
+/**
+ * Standard Priority Levels from ServiceDesk Plus (SDP)
+ * P1 (Critical), P2 (High), P3 (Medium), P4 (Low)
+ */
+export type PriorityLevel = 'P1' | 'P2' | 'P3' | 'P4';
 
-function getSLAThreshold(priority: string | undefined, type: 'firstResponse' | 'resolution'): number {
-  if (!priority) return SLA_THRESHOLDS[type].default;
-  const p = priority.toLowerCase();
-  if (p.includes('high') || p.includes('urgent') || p.includes('1')) return SLA_THRESHOLDS[type].High;
-  if (p.includes('low') || p.includes('3')) return SLA_THRESHOLDS[type].Low;
-  return SLA_THRESHOLDS[type].Medium;
+/**
+ * Parses raw priority string into standard P1, P2, P3, P4.
+ * Handles formats like: "P1", "P1 - Critical", "Critical", "1", "1 - Critical", etc.
+ */
+export function parsePriority(priorityStr?: string | number | null): PriorityLevel {
+  if (priorityStr === undefined || priorityStr === null) return 'P3';
+  const str = String(priorityStr).trim().toLowerCase();
+
+  if (
+    str.includes('p1') ||
+    str.includes('critical') ||
+    str === '1' ||
+    str.startsWith('1 ') ||
+    str.startsWith('1-')
+  ) {
+    return 'P1';
+  }
+  if (
+    str.includes('p2') ||
+    str.includes('high') ||
+    str.includes('urgent') ||
+    str === '2' ||
+    str.startsWith('2 ') ||
+    str.startsWith('2-')
+  ) {
+    return 'P2';
+  }
+  if (
+    str.includes('p4') ||
+    str.includes('low') ||
+    str === '4' ||
+    str.startsWith('4 ') ||
+    str.startsWith('4-')
+  ) {
+    return 'P4';
+  }
+  if (
+    str.includes('p3') ||
+    str.includes('medium') ||
+    str.includes('normal') ||
+    str === '3' ||
+    str.startsWith('3 ') ||
+    str.startsWith('3-')
+  ) {
+    return 'P3';
+  }
+
+  return 'P3';
 }
 
-// Business hours: 8:30 AM to 5:30 PM (17:30), Monday to Friday.
-function getBusinessMinutes(start: Date, end: Date): number {
+/**
+ * SLA Prioritization Matrix (SDP)
+ * P1 (Critical): Response Time 15 mins, Resolution Time 4 hours
+ * P2 (High): Response Time 30 mins, Resolution Time 24 hours
+ * P3 (Medium): Response Time 4 hours, Resolution Time 3 days
+ * P4 (Low): Response Time 8 hours, Resolution Time 5 days
+ */
+export const SLA_THRESHOLDS = {
+  firstResponse: {
+    P1: 15,          // 15 mins
+    P2: 30,          // 30 mins
+    P3: 4 * 60,      // 4 hours (240 mins)
+    P4: 8 * 60,      // 8 hours (480 mins)
+    default: 4 * 60, // 4 hours
+  },
+  resolution: {
+    P1: 4 * 60,        // 4 hours (240 mins)
+    P2: 24 * 60,       // 24 hours (1,440 mins)
+    P3: 3 * 24 * 60,   // 3 days = 72 hours (4,320 mins)
+    P4: 5 * 24 * 60,   // 5 days = 120 hours (7,200 mins)
+    default: 3 * 24 * 60, // 3 days
+  },
+} as const;
+
+export function getSLAThreshold(
+  priority: string | undefined,
+  type: 'firstResponse' | 'resolution'
+): number {
+  if (!priority) return SLA_THRESHOLDS[type].default;
+  const p = parsePriority(priority);
+  return SLA_THRESHOLDS[type][p];
+}
+
+/**
+ * Business hours calculation: 8:30 AM to 5:30 PM (17:30), Monday to Friday.
+ */
+export function getBusinessMinutes(start: Date, end: Date): number {
   if (start >= end) return 0;
 
   let totalMinutes = 0;
@@ -37,7 +104,6 @@ function getBusinessMinutes(start: Date, end: Date): number {
     const day = current.getDay();
     // 0 = Sunday, 6 = Saturday (Exclude Weekends)
     if (day !== 0 && day !== 6) {
-      // Define start (8:30 AM) and end (5:30 PM) of business hours for the current day
       const startOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 8, 30, 0);
       const endOfDay = new Date(current.getFullYear(), current.getMonth(), current.getDate(), 17, 30, 0);
 
@@ -48,39 +114,132 @@ function getBusinessMinutes(start: Date, end: Date): number {
         totalMinutes += (effectiveEnd.getTime() - effectiveStart.getTime()) / 60000;
       }
     }
-    // Move to midnight of the next day
     current.setDate(current.getDate() + 1);
     current.setHours(0, 0, 0, 0);
   }
   return totalMinutes;
 }
 
-// First Response SLA
+/**
+ * Checks if raw SDP overdue status field explicitly indicates overdue / breached.
+ * In ServiceDesk Plus, column "Overdue Status" = TRUE means OVERDUE (FAILED).
+ * Value FALSE means NOT OVERDUE (PASSED).
+ */
+export function isStatusOverdue(value: unknown): boolean | null {
+  if (value === undefined || value === null) return null;
+  const str = String(value).trim().toLowerCase();
+  if (str === '') return null;
+
+  if (
+    str === 'true' ||
+    str === 'yes' ||
+    str === 'overdue' ||
+    str === 'breached' ||
+    str === 'failed' ||
+    str === '1'
+  ) {
+    return true; // Overdue = true (SLA Failed)
+  }
+  if (
+    str === 'false' ||
+    str === 'no' ||
+    str === 'met' ||
+    str === 'passed' ||
+    str === 'pass' ||
+    str === 'complied' ||
+    str === 'compliant' ||
+    str === '0'
+  ) {
+    return false; // Overdue = false (SLA Passed)
+  }
+  return null;
+}
+
+/**
+ * Evaluates First Response SLA for an incident.
+ * Uses SDP raw overdue status if present; otherwise accurately computes against SLA matrix.
+ */
+export function evaluateFirstResponseOverdue(
+  inc: Incident,
+  teamName: string,
+  referenceDate: Date = new Date()
+): boolean {
+  // 1. Check raw SDP status
+  const rawStatus = isStatusOverdue(inc.rawFirstResponseStatus);
+  if (rawStatus !== null) {
+    return rawStatus;
+  }
+
+  // Check in rawData if mapping missed it
+  if (inc.rawData) {
+    for (const [key, val] of Object.entries(inc.rawData)) {
+      if (/first\s*response.*(overdue|status|sla)/i.test(key)) {
+        const s = isStatusOverdue(val);
+        if (s !== null) return s;
+      }
+    }
+  }
+
+  // 2. Compute from timestamps using SLA matrix
+  if (!inc.createdTime) return false;
+
+  const thresholdMins = getSLAThreshold(inc.priority, 'firstResponse');
+  const endDate = inc.respondedDate || inc.completedTime || referenceDate;
+  let elapsedMins = 0;
+
+  if (teamName === 'ECS ISS') {
+    // 24/7 SLA
+    elapsedMins = (endDate.getTime() - inc.createdTime.getTime()) / 60000;
+  } else {
+    // Office Hours (8:30 AM - 5:30 PM, Mon-Fri)
+    elapsedMins = getBusinessMinutes(inc.createdTime, endDate);
+  }
+
+  return elapsedMins > thresholdMins;
+}
+
+/**
+ * Evaluates Resolution Time SLA for an incident.
+ * Uses SDP raw overdue status if present; otherwise accurately computes against SLA matrix.
+ */
+export function evaluateResolutionOverdue(
+  inc: Incident,
+  referenceDate: Date = new Date()
+): boolean {
+  // 1. Check raw SDP status
+  const rawStatus = isStatusOverdue(inc.rawResolutionStatus);
+  if (rawStatus !== null) {
+    return rawStatus;
+  }
+
+  // Check in rawData if mapping missed it
+  if (inc.rawData) {
+    for (const [key, val] of Object.entries(inc.rawData)) {
+      if (/^(overdue\s*status|resolution\s*overdue|resolution\s*sla|resolution\s*status)/i.test(key)) {
+        const s = isStatusOverdue(val);
+        if (s !== null) return s;
+      }
+    }
+  }
+
+  // 2. Compute from timestamps using SLA matrix (24/7 calendar elapsed minutes)
+  if (!inc.createdTime) return false;
+
+  const thresholdMins = getSLAThreshold(inc.priority, 'resolution');
+  const endDate = inc.completedTime || referenceDate;
+  const elapsedMins = (endDate.getTime() - inc.createdTime.getTime()) / 60000;
+
+  return elapsedMins > thresholdMins;
+}
+
+// First Response SLA per Team
 function calculateFirstResponseSLA(teamName: string, incidents: Incident[]): TeamSLAResult {
   const total = incidents.length;
   const failedIncidentIds: string[] = [];
   const passedIncidentIds: string[] = [];
 
   for (const inc of incidents) {
-    if (!inc.createdTime) {
-      passedIncidentIds.push(inc.requestId);
-      continue;
-    }
-
-    const thresholdMins = getSLAThreshold(inc.priority, 'firstResponse');
-    // If not responded yet, use current time to determine if it's currently overdue
-    const endDate = inc.respondedDate || new Date();
-    let elapsedMins = 0;
-
-    if (teamName === 'ECS ISS') {
-      // 24/7 SLA - Runs continuously
-      elapsedMins = (endDate.getTime() - inc.createdTime.getTime()) / 60000;
-    } else {
-      // Office Hours SLA (8:30 AM - 5:30 PM, no weekends)
-      elapsedMins = getBusinessMinutes(inc.createdTime, endDate);
-    }
-
-    const isOverdue = elapsedMins > thresholdMins;
+    const isOverdue = evaluateFirstResponseOverdue(inc, teamName);
     inc.firstResponseOverdue = isOverdue;
 
     if (isOverdue) {
@@ -106,26 +265,14 @@ function calculateFirstResponseSLA(teamName: string, incidents: Incident[]): Tea
   };
 }
 
-// Convertion of Time Format 
+// Resolution Time SLA per Team
 function calculateResolutionSLA(teamName: string, incidents: Incident[]): TeamSLAResult {
   const total = incidents.length;
   const failedIncidentIds: string[] = [];
   const passedIncidentIds: string[] = [];
 
   for (const inc of incidents) {
-    if (!inc.createdTime) {
-      passedIncidentIds.push(inc.requestId);
-      continue;
-    }
-
-    const thresholdMins = getSLAThreshold(inc.priority, 'resolution');
-    const endDate = inc.completedTime || new Date();
-
-    // Resolution Time is continuously calculated (24/7) for ALL teams
-    const elapsedMins = (endDate.getTime() - inc.createdTime.getTime()) / 60000;
-
-    // Determine status automatically
-    const isOverdue = elapsedMins > thresholdMins;
+    const isOverdue = evaluateResolutionOverdue(inc);
     inc.resolutionOverdue = isOverdue;
 
     if (isOverdue) {
@@ -150,6 +297,7 @@ function calculateResolutionSLA(teamName: string, incidents: Incident[]): TeamSL
     passedIncidentIds,
   };
 }
+
 // Calculation of Rows based on the data
 function calculateTotalRow(teamResults: TeamSLAResult[]): TeamSLAResult {
   let totalIncidents = 0;
@@ -182,7 +330,7 @@ function calculateTotalRow(teamResults: TeamSLAResult[]): TeamSLAResult {
   };
 }
 
-//Group per Team
+// Group per Team
 function groupByTeam(incidents: Incident[]): Record<string, Incident[]> {
   const groups: Record<string, Incident[]> = {};
 
@@ -213,7 +361,6 @@ export function calculateSLAReport(
     resolutionTime.push(calculateResolutionSLA(team, teamIncidents));
   }
 
-  // Calculate total rows using sum-based calculation
   const firstResponseTotal = calculateTotalRow(firstResponse);
   const resolutionTimeTotal = calculateTotalRow(resolutionTime);
 
@@ -225,14 +372,16 @@ export function calculateSLAReport(
   };
 }
 
-// Pecentage format
+// Percentage format
 export function formatSLAPercentage(value: number | null): string {
   if (value === null) return 'N/A';
   return `${value.toFixed(2)}%`;
 }
 
-//Split incidents into Current Week and Previous Week based on the raw data dates
-export function splitIncidentsByWeek(incidents: Incident[]): { currentWeek: Incident[], previousWeek: Incident[] } {
+// Split incidents into Current Week and Previous Week
+export function splitIncidentsByWeek(
+  incidents: Incident[]
+): { currentWeek: Incident[]; previousWeek: Incident[] } {
   let maxDate = new Date(0);
   for (const inc of incidents) {
     const d = inc.completedTime || inc.createdTime;
@@ -245,7 +394,6 @@ export function splitIncidentsByWeek(incidents: Incident[]): { currentWeek: Inci
     return { currentWeek: incidents, previousWeek: [] };
   }
 
-  // Get Monday of the max date's week
   const day = maxDate.getDay();
   const diff = maxDate.getDate() - day + (day === 0 ? -6 : 1);
   const currentWeekStart = new Date(maxDate);
@@ -275,58 +423,10 @@ export function splitIncidentsByWeek(incidents: Incident[]): { currentWeek: Inci
   return { currentWeek, previousWeek };
 }
 
-//Weekly Compliance for FR & Resolution
-export function parseSLAMetStatus(value: unknown): boolean | null {
-  if (value === undefined || value === null) return null;
-  if (typeof value === 'boolean') return value;
-
-  const str = String(value).trim().toLowerCase();
-  if (str === '') return null;
-
-  if (str === 'true' || str === 'passed' || str === 'pass' || str === 'met' || str === 'yes' || str === '1') {
-    return true;
-  }
-  if (str === 'false' || str === 'failed' || str === 'fail' || str === 'overdue' || str === 'breached' || str === 'no' || str === '0') {
-    return false;
-  }
-  return null;
-}
-
-function getIncidentFirstResponseMet(inc: Incident): boolean | null {
-  if (inc.rawFirstResponseStatus !== undefined && inc.rawFirstResponseStatus !== null) {
-    const met = parseSLAMetStatus(inc.rawFirstResponseStatus);
-    if (met !== null) return met;
-  }
-  if (inc.rawData) {
-    for (const [key, val] of Object.entries(inc.rawData)) {
-      if (/first\s*response.*(overdue|status|sla)/i.test(key)) {
-        const met = parseSLAMetStatus(val);
-        if (met !== null) return met;
-      }
-    }
-  }
-  return null;
-}
-
-function getIncidentResolutionMet(inc: Incident): boolean | null {
-  if (inc.rawResolutionStatus !== undefined && inc.rawResolutionStatus !== null) {
-    const met = parseSLAMetStatus(inc.rawResolutionStatus);
-    if (met !== null) return met;
-  }
-  if (inc.rawData) {
-    for (const [key, val] of Object.entries(inc.rawData)) {
-      if (/^(overdue\s*status|resolution\s*overdue|resolution\s*sla|resolution\s*status)/i.test(key)) {
-        const met = parseSLAMetStatus(val);
-        if (met !== null) return met;
-      }
-    }
-  }
-  return null;
-}
-
+// Weekly Completion for FR & Resolution
 export function calculateWeeklyCompletion(
   incidents: Incident[]
-) {
+): WeeklyCompletion {
   if (incidents.length === 0) {
     return {
       firstResponse: { passed: 0, failed: 0, slaPassRate: null, passedIncidentIds: [], failedIncidentIds: [] },
@@ -334,46 +434,24 @@ export function calculateWeeklyCompletion(
     };
   }
 
-  const targetIncidents = incidents;
-
   const frPassedIds: string[] = [];
   const frFailedIds: string[] = [];
   const rtPassedIds: string[] = [];
   const rtFailedIds: string[] = [];
 
-  for (const inc of targetIncidents) {
-    // First response evaluation: TRUE = PASSED, FALSE = FAILED
-    const frMet = getIncidentFirstResponseMet(inc);
-    if (frMet !== null) {
-      if (frMet) {
-        frPassedIds.push(inc.requestId);
-      } else {
-        frFailedIds.push(inc.requestId);
-      }
+  for (const inc of incidents) {
+    const frOverdue = evaluateFirstResponseOverdue(inc, inc.assignedTeam || inc.sourceTeam);
+    if (frOverdue) {
+      frFailedIds.push(inc.requestId);
     } else {
-      // Fallback: if not overdue then passed, otherwise failed
-      if (inc.firstResponseOverdue) {
-        frFailedIds.push(inc.requestId);
-      } else {
-        frPassedIds.push(inc.requestId);
-      }
+      frPassedIds.push(inc.requestId);
     }
 
-    // Resolution evaluation: TRUE = PASSED, FALSE = FAILED
-    const rtMet = getIncidentResolutionMet(inc);
-    if (rtMet !== null) {
-      if (rtMet) {
-        rtPassedIds.push(inc.requestId);
-      } else {
-        rtFailedIds.push(inc.requestId);
-      }
+    const rtOverdue = evaluateResolutionOverdue(inc);
+    if (rtOverdue) {
+      rtFailedIds.push(inc.requestId);
     } else {
-      // Fallback: if not overdue then passed, otherwise failed
-      if (inc.resolutionOverdue) {
-        rtFailedIds.push(inc.requestId);
-      } else {
-        rtPassedIds.push(inc.requestId);
-      }
+      rtPassedIds.push(inc.requestId);
     }
   }
 

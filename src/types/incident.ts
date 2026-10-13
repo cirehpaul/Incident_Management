@@ -20,6 +20,8 @@ export interface ColumnMapping {
   completedTime: string;
   overdueStatus: string;
   category: string;
+  subCategory?: string;
+  item?: string;
   department: string;
   requester: string;
 }
@@ -36,6 +38,8 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   completedTime: 'Completed Time',
   overdueStatus: 'Overdue Status',
   category: 'Category',
+  subCategory: 'Subcategory',
+  item: 'Item',
   department: 'Department',
   requester: 'Requester',
 };
@@ -49,6 +53,12 @@ export interface Incident {
 
   /** The incident category */
   category: string;
+
+  /** The incident subcategory */
+  subCategory?: string;
+
+  /** The incident item */
+  item?: string;
 
   /** The final team responsible for SLA reporting (after routing) */
   assignedTeam: string;
@@ -100,4 +110,6 @@ export interface ValidationSummary {
   detectedColumns: string[];
   detectedSourceTeams: string[];
   detectedCategories: string[];
+  detectedSubCategories?: string[];
+  detectedItems?: string[];
 }

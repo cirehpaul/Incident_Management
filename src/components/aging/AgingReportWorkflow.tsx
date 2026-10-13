@@ -11,6 +11,7 @@ import { ValidationSummaryView } from '@/components/validation/ValidationSummary
 import { RoutingPreview } from '@/components/routing/RoutingPreview';
 import { AgingPreviousWeekInput } from '@/components/aging/AgingPreviousWeekInput';
 import { AgingReportTable } from '@/components/aging/AgingReportTable';
+import { ExportDropdown } from '@/components/report/ExportDropdown';
 import { DetailModal } from '@/components/report/DetailModal';
 
 import { parseFile } from '@/lib/excel/parser';
@@ -266,11 +267,13 @@ export function AgingReportWorkflow({ account, onBack }: AgingReportWorkflowProp
                 ← Back
               </button>
               <div className="report-export-buttons">
+                <ExportDropdown
+                  incidents={state.routedIncidents}
+                  reportData={state.reportData}
+                  baseFilename="SMAC_Aging_Report"
+                />
                 <button className="btn btn-export" onClick={handleExportPng}>
                   📷 Download PNG
-                </button>
-                <button className="btn btn-export" onClick={() => window.print()}>
-                  🖨️ Print / PDF
                 </button>
               </div>
             </div>

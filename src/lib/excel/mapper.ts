@@ -16,6 +16,8 @@ export function autoDetectMapping(columns: string[]): Partial<ColumnMapping> {
     { field: 'completedTime', patterns: [/completed\s*time/i, /completed\s*date/i, /resolved\s*time/i, /closed\s*time/i, /resolved\s*date/i] },
     { field: 'overdueStatus', patterns: [/^overdue\s*status$/i, /resolution\s*overdue/i, /overdue$/i] },
     { field: 'category', patterns: [/^category$/i, /incident\s*category/i, /^type$/i] },
+    { field: 'subCategory', patterns: [/sub\s*category/i, /^subcategory$/i, /sub-category/i, /sub_category/i] },
+    { field: 'item', patterns: [/^item$/i, /^items$/i, /item\s*name/i, /asset\s*item/i, /^item\s*description$/i] },
     { field: 'department', patterns: [/department/i, /dept/i] },
     { field: 'requester', patterns: [/requester/i, /requested\s*by/i, /caller/i, /reported\s*by/i] },
   ];
@@ -85,6 +87,9 @@ export function mapRowToIncident(
     warnings.push('Missing Category');
   }
 
+  const subCategory = mapping.subCategory ? String(row[mapping.subCategory] || '').trim() : undefined;
+  const item = mapping.item ? String(row[mapping.item] || '').trim() : undefined;
+
   const createdTime = parseDate(row[mapping.createdTime]);
   const respondedDate = parseDate(row[mapping.respondedDate]);
   const completedTime = parseDate(row[mapping.completedTime]);
@@ -103,6 +108,8 @@ export function mapRowToIncident(
     requestId,
     sourceTeam: technician,
     category,
+    subCategory: subCategory || undefined,
+    item: item || undefined,
     assignedTeam: technician,
     routingReason: 'Default assignment',
     wasReassigned: false,
@@ -131,12 +138,16 @@ export function mapAllRows(
   const allWarnings: { requestId: string; messages: string[] }[] = [];
   const sourceTeams = new Set<string>();
   const categories = new Set<string>();
+  const subCategories = new Set<string>();
+  const items = new Set<string>();
 
   for (const row of rows) {
     const { incident, errors, warnings } = mapRowToIncident(row, mapping);
 
     if (incident.sourceTeam) sourceTeams.add(incident.sourceTeam);
     if (incident.category) categories.add(incident.category);
+    if (incident.subCategory) subCategories.add(incident.subCategory);
+    if (incident.item) items.add(incident.item);
 
     if (errors.length > 0) {
       allErrors.push({ requestId: incident.requestId || 'Unknown', messages: errors });
@@ -163,6 +174,8 @@ export function mapAllRows(
       detectedColumns: columns,
       detectedSourceTeams: Array.from(sourceTeams),
       detectedCategories: Array.from(categories),
+      detectedSubCategories: Array.from(subCategories),
+      detectedItems: Array.from(items),
     },
   };
 }

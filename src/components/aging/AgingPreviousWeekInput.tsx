@@ -74,7 +74,7 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
       <div className="prevweek-header">
         <h2>Previous Week Aging Totals</h2>
         <p className="prevweek-description">
-          Please manually enter the total aging IR counts from the previous week's report. 
+          Please manually enter the total aging IR counts from the previous week's report.
           This data cannot be auto-calculated, as it relies on the exact snapshot of tickets that were open last week.
         </p>
       </div>
@@ -90,7 +90,7 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
         <table className="prevweek-table">
           <thead>
             <tr>
-              <th className="col-team">Team</th>
+              <th className="col-team">Technician Name</th>
               <th className="col-sla">Total Aging IRs (Last Week)</th>
             </tr>
           </thead>
