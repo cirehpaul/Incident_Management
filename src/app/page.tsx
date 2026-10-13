@@ -157,6 +157,21 @@ export default function HomePage() {
   }, []);
 
 
+  const [agingKey, setAgingKey] = useState<number>(Date.now());
+
+  const handleSelectReport = useCallback((view: DashboardView) => {
+    if (view === 'weekly') {
+      dispatch({ type: 'RESET' });
+      setActiveView('weekly');
+    } else if (view === 'aging') {
+      setAgingStoredReport(null);
+      setAgingKey(Date.now());
+      setActiveView('aging');
+    } else {
+      setActiveView(view);
+    }
+  }, []);
+
   // 1) Not logged in → PIN screen
   if (!currentAccount) {
     return <PinLogin onLogin={setCurrentAccount} />;
@@ -167,11 +182,13 @@ export default function HomePage() {
     return (
       <Dashboard
         account={currentAccount}
-        onSelectReport={(view) => setActiveView(view)}
+        onSelectReport={handleSelectReport}
         onOpenStoredReport={handleOpenStoredReport}
         onLogout={() => {
           setCurrentAccount(null);
           setActiveView('dashboard');
+          dispatch({ type: 'RESET' });
+          setAgingStoredReport(null);
         }}
       />
     );
@@ -218,6 +235,7 @@ export default function HomePage() {
   if (activeView === 'aging') {
     return (
       <AgingReportWorkflow
+        key={agingStoredReport ? `stored-${Date.now()}` : `new-${agingKey}`}
         account={currentAccount}
         onBack={() => {
           setAgingStoredReport(null);
@@ -363,18 +381,29 @@ export default function HomePage() {
         {state.currentStep === 'report' && state.reportData && (
           <div className="report-step">
             <div className="report-actions-bar">
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  if (!state.rawData) {
-                    setActiveView('dashboard');
-                  } else {
-                    dispatch({ type: 'SET_STEP', step: 'previous-week' });
-                  }
-                }}
-              >
-                {state.rawData ? '← Back' : '← Back to Dashboard'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!state.rawData) {
+                      setActiveView('dashboard');
+                    } else {
+                      dispatch({ type: 'SET_STEP', step: 'previous-week' });
+                    }
+                  }}
+                >
+                  {state.rawData ? '← Back' : '← Back to Dashboard'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    dispatch({ type: 'RESET' });
+                  }}
+                  title="Create a new report from scratch"
+                >
+                  + New Report
+                </button>
+              </div>
               <div className="report-export-buttons">
                 <ExportDropdown
                   incidents={state.routedIncidents}

@@ -282,18 +282,29 @@ export function AgingReportWorkflow({
         {state.currentStep === 'report' && state.reportData && (
           <div className="report-step">
             <div className="report-actions-bar">
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  if (!state.rawData) {
-                    onBack();
-                  } else {
-                    dispatch({ type: 'SET_STEP', step: 'previous-week' });
-                  }
-                }}
-              >
-                {state.rawData ? '← Back' : '← Back to Dashboard'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!state.rawData) {
+                      onBack();
+                    } else {
+                      dispatch({ type: 'SET_STEP', step: 'previous-week' });
+                    }
+                  }}
+                >
+                  {state.rawData ? '← Back' : '← Back to Dashboard'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    dispatch({ type: 'RESET' });
+                  }}
+                  title="Create a new aging report from scratch"
+                >
+                  + New Report
+                </button>
+              </div>
               <div className="report-export-buttons">
                 <ExportDropdown
                   incidents={state.routedIncidents}

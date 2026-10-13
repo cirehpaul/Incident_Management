@@ -100,6 +100,51 @@ export function deleteStoredReport(id: string): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
+import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
+import type { PreviousWeekSLA } from '@/types/sla';
+import type { PreviousWeekAging } from '@/types/aging';
+
+/**
+ * Extract PreviousWeekSLA values from a stored Weekly report
+ */
+export function extractWeeklySLAFromStored(report: StoredReport): PreviousWeekSLA {
+  const data = report.reportData as WeeklyReportData;
+  const firstResponse: Record<string, number | null> = {};
+  const resolutionTime: Record<string, number | null> = {};
+
+  for (const team of REPORT_TEAMS) {
+    const frItem = data.currentWeek?.firstResponse?.find((t) => t.teamName === team);
+    const rtItem = data.currentWeek?.resolutionTime?.find((t) => t.teamName === team);
+    firstResponse[team] = frItem?.slaPassRate !== undefined ? frItem.slaPassRate : null;
+    resolutionTime[team] = rtItem?.slaPassRate !== undefined ? rtItem.slaPassRate : null;
+  }
+
+  return {
+    firstResponse,
+    resolutionTime,
+    firstResponseTotal: data.currentWeek?.firstResponseTotal?.slaPassRate ?? null,
+    resolutionTimeTotal: data.currentWeek?.resolutionTimeTotal?.slaPassRate ?? null,
+  };
+}
+
+/**
+ * Extract PreviousWeekAging values from a stored Aging report
+ */
+export function extractAgingFromStored(report: StoredReport): PreviousWeekAging {
+  const data = report.reportData as AgingReportData;
+  const teamTotals: Record<string, number | null> = {};
+
+  for (const team of REPORT_TEAMS) {
+    const row = data.agingRows?.find((r) => r.teamName === team);
+    teamTotals[team] = row !== undefined ? row.totalAging : null;
+  }
+
+  return {
+    teamTotals,
+    grandTotal: data.agingGrandTotal ?? null,
+  };
+}
+
 /**
  * Get a specific stored report by ID
  */

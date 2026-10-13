@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import type { PreviousWeekSLA } from '@/types/sla';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
+import {
+  getStoredReports,
+  extractWeeklySLAFromStored,
+  type StoredReport,
+} from '@/lib/storage/report-storage';
 
 interface PreviousWeekInputProps {
   initialValues: PreviousWeekSLA;
@@ -13,6 +18,8 @@ interface PreviousWeekInputProps {
 
 export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: PreviousWeekInputProps) {
   const [values, setValues] = useState<PreviousWeekSLA>(initialValues);
+  const [storedReports, setStoredReports] = useState<StoredReport[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   const calculateTotal = (teamValues: Record<string, number | null>): number | null => {
     const validValues = Object.values(teamValues).filter(
@@ -24,14 +31,59 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
   };
 
   useEffect(() => {
-    const frTotal = initialValues.firstResponseTotal ?? calculateTotal(initialValues.firstResponse);
-    const rtTotal = initialValues.resolutionTimeTotal ?? calculateTotal(initialValues.resolutionTime);
-    setValues({
-      ...initialValues,
-      firstResponseTotal: frTotal,
-      resolutionTimeTotal: rtTotal,
-    });
+    const weeklyReports = getStoredReports().filter((r) => r.type === 'weekly');
+    setStoredReports(weeklyReports);
+
+    // If initial values have no inputs, auto-fill from the latest stored report if available
+    const hasExisting = Object.values(initialValues.firstResponse).some((v) => v !== null);
+    if (!hasExisting && weeklyReports.length > 0) {
+      const latest = weeklyReports[0];
+      const extracted = extractWeeklySLAFromStored(latest);
+      setValues(extracted);
+      onSave(extracted);
+      setSelectedReportId(latest.id);
+    } else {
+      const frTotal = initialValues.firstResponseTotal ?? calculateTotal(initialValues.firstResponse);
+      const rtTotal = initialValues.resolutionTimeTotal ?? calculateTotal(initialValues.resolutionTime);
+      setValues({
+        ...initialValues,
+        firstResponseTotal: frTotal,
+        resolutionTimeTotal: rtTotal,
+      });
+    }
   }, [initialValues]);
+
+  const handleSelectStoredReport = (reportId: string) => {
+    if (!reportId) {
+      setSelectedReportId(null);
+      return;
+    }
+    const found = storedReports.find((r) => r.id === reportId);
+    if (found) {
+      const extracted = extractWeeklySLAFromStored(found);
+      setValues(extracted);
+      onSave(extracted);
+      setSelectedReportId(reportId);
+    }
+  };
+
+  const handleClearAutofill = () => {
+    setSelectedReportId(null);
+    const emptyFirst: Record<string, number | null> = {};
+    const emptyRes: Record<string, number | null> = {};
+    for (const t of REPORT_TEAMS) {
+      emptyFirst[t] = null;
+      emptyRes[t] = null;
+    }
+    const empty: PreviousWeekSLA = {
+      firstResponse: emptyFirst,
+      resolutionTime: emptyRes,
+      firstResponseTotal: null,
+      resolutionTimeTotal: null,
+    };
+    setValues(empty);
+    onSave(empty);
+  };
 
   const handleChange = (
     section: 'firstResponse' | 'resolutionTime',
@@ -98,10 +150,61 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
         </p>
       </div>
 
+      {storedReports.length > 0 && (
+        <div className="prevweek-autofill-banner">
+          <div className="prevweek-autofill-left">
+            <span className="prevweek-autofill-icon">💡</span>
+            <div>
+              <div className="prevweek-autofill-title">
+                {selectedReportId ? 'Auto-filled from Stored Report' : 'Auto-fill from Stored Reports'}
+              </div>
+              <div className="prevweek-autofill-sub">
+                {selectedReportId ? (
+                  <>
+                    Loaded previous week SLA rates from{' '}
+                    <strong>
+                      {storedReports.find((r) => r.id === selectedReportId)?.period ||
+                        storedReports.find((r) => r.id === selectedReportId)?.title}
+                    </strong>
+                    . You can freely adjust any values below.
+                  </>
+                ) : (
+                  'Select a previous stored report to automatically pull last week pass rates.'
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="prevweek-autofill-controls">
+            <select
+              value={selectedReportId || ''}
+              onChange={(e) => handleSelectStoredReport(e.target.value)}
+              className="prevweek-autofill-select"
+            >
+              <option value="">-- Manual Entry / Pick Stored Report --</option>
+              {storedReports.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.period || r.title} ({r.savedAtFormatted})
+                </option>
+              ))}
+            </select>
+            {selectedReportId && (
+              <button
+                type="button"
+                onClick={handleClearAutofill}
+                className="btn-clear-autofill"
+                title="Clear auto-filled values and enter manually"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="prevweek-info-banner">
         <span className="info-icon">📊</span>
         <p>
-          Enter the percentage values per team. The total will automatically calculate based on the inputted team percentages.
+          Enter or review the percentage values per team. The total automatically calculates based on the team percentages.
         </p>
       </div>
 

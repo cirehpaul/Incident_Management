@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import type { PreviousWeekAging } from '@/types/aging';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
+import {
+  getStoredReports,
+  extractAgingFromStored,
+  type StoredReport,
+} from '@/lib/storage/report-storage';
 
 interface AgingPreviousWeekInputProps {
   initialValues: PreviousWeekAging;
@@ -13,10 +18,53 @@ interface AgingPreviousWeekInputProps {
 
 export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProceed }: AgingPreviousWeekInputProps) {
   const [values, setValues] = useState<PreviousWeekAging>(initialValues);
+  const [storedReports, setStoredReports] = useState<StoredReport[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   useEffect(() => {
-    setValues(initialValues);
+    const agingReports = getStoredReports().filter((r) => r.type === 'aging');
+    setStoredReports(agingReports);
+
+    // If initial values have no inputs, auto-fill from latest stored report if available
+    const hasExisting = Object.values(initialValues.teamTotals).some((v) => v !== null);
+    if (!hasExisting && agingReports.length > 0) {
+      const latest = agingReports[0];
+      const extracted = extractAgingFromStored(latest);
+      setValues(extracted);
+      onSave(extracted);
+      setSelectedReportId(latest.id);
+    } else {
+      setValues(initialValues);
+    }
   }, [initialValues]);
+
+  const handleSelectStoredReport = (reportId: string) => {
+    if (!reportId) {
+      setSelectedReportId(null);
+      return;
+    }
+    const found = storedReports.find((r) => r.id === reportId);
+    if (found) {
+      const extracted = extractAgingFromStored(found);
+      setValues(extracted);
+      onSave(extracted);
+      setSelectedReportId(reportId);
+    }
+  };
+
+  const handleClearAutofill = () => {
+    setSelectedReportId(null);
+    const emptyTotals: Record<string, number | null> = {};
+    for (const t of REPORT_TEAMS) {
+      emptyTotals[t] = null;
+    }
+    const empty: PreviousWeekAging = {
+      teamTotals: emptyTotals,
+      grandTotal: null,
+    };
+    setValues(empty);
+    onSave(empty);
+  };
 
   const handleTeamChange = (team: string, rawValue: string) => {
     const newValues = { ...values, teamTotals: { ...values.teamTotals } };
@@ -79,10 +127,61 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
         </p>
       </div>
 
+      {storedReports.length > 0 && (
+        <div className="prevweek-autofill-banner">
+          <div className="prevweek-autofill-left">
+            <span className="prevweek-autofill-icon">💡</span>
+            <div>
+              <div className="prevweek-autofill-title">
+                {selectedReportId ? 'Auto-filled from Stored Report' : 'Auto-fill from Stored Reports'}
+              </div>
+              <div className="prevweek-autofill-sub">
+                {selectedReportId ? (
+                  <>
+                    Loaded previous week aging totals from{' '}
+                    <strong>
+                      {storedReports.find((r) => r.id === selectedReportId)?.period ||
+                        storedReports.find((r) => r.id === selectedReportId)?.title}
+                    </strong>
+                    . You can freely adjust any values below.
+                  </>
+                ) : (
+                  'Select a previous stored report to automatically pull last week total aging counts.'
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="prevweek-autofill-controls">
+            <select
+              value={selectedReportId || ''}
+              onChange={(e) => handleSelectStoredReport(e.target.value)}
+              className="prevweek-autofill-select"
+            >
+              <option value="">-- Manual Entry / Pick Stored Report --</option>
+              {storedReports.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.period || r.title} ({r.savedAtFormatted})
+                </option>
+              ))}
+            </select>
+            {selectedReportId && (
+              <button
+                type="button"
+                onClick={handleClearAutofill}
+                className="btn-clear-autofill"
+                title="Clear auto-filled values and enter manually"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="prevweek-info-banner">
         <span className="info-icon">✨</span>
         <p>
-          Fill in the values exactly as they appeared in last week's "Total Aging IRs" column. Leave them blank or type "-" if you do not have data for a specific team.
+          Fill in or review the values for each team. Leave them blank or type "-" if you do not have data for a specific team.
         </p>
       </div>
 
