@@ -1,17 +1,58 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import type { AgingReportData } from '@/types/aging';
+import type { Incident } from '@/types/incident';
 import { AGING_BUCKET_ORDER, AGING_BUCKET_LABELS } from '@/types/aging';
 import { formatSLAPercentage } from '@/lib/aging/calculator';
+import { saveReport } from '@/lib/storage/report-storage';
 
 interface AgingReportTableProps {
   data: AgingReportData;
   onCellClick?: (title: string, incidentIds: string[]) => void;
+  routedIncidents?: Incident[];
+  onSaveReport?: () => void;
 }
 
-export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
+export function AgingReportTable({
+  data,
+  onCellClick,
+  routedIncidents,
+  onSaveReport,
+}: AgingReportTableProps) {
   const reportRef = useRef<HTMLDivElement>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSave = () => {
+    saveReport({
+      type: 'aging',
+      title: data.reportTitle,
+      period: data.reportPeriod,
+      reportData: data,
+      routedIncidents,
+    });
+    setIsSaved(true);
+    if (onSaveReport) onSaveReport();
+    setTimeout(() => setIsSaved(false), 4000);
+  };
+
+  const formattedDate = (() => {
+    try {
+      const d =
+        typeof data.generatedAt === 'string'
+          ? new Date(data.generatedAt)
+          : data.generatedAt;
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  })();
 
   const getPercentageClass = (value: number | null): string => {
     if (value === null) return 'sla-na';
@@ -202,13 +243,23 @@ export function AgingReportTable({ data, onCellClick }: AgingReportTableProps) {
 
         {/* Footer */}
         <div className="aging-report-footer">
-          <p>Generated: {data.generatedAt.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}</p>
+          <p>Generated: {formattedDate}</p>
+          <button
+            type="button"
+            className={`btn-save-report ${isSaved ? 'is-saved' : ''}`}
+            onClick={handleSave}
+            title="Save report to Stored Reports in browser storage"
+          >
+            {isSaved ? (
+              <>
+                <span className="save-icon">✓</span> Report Saved
+              </>
+            ) : (
+              <>
+                <span className="save-icon">💾</span> Save Report
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

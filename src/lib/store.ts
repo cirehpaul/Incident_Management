@@ -68,6 +68,7 @@ export type AppAction =
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'OPEN_DETAIL_MODAL'; title: string; incidentIds: string[] }
   | { type: 'CLOSE_DETAIL_MODAL' }
+  | { type: 'LOAD_STORED_REPORT'; reportData: WeeklyReportData; routedIncidents: Incident[] }
   | { type: 'RESET' };
 
 /** Create empty previous week SLA */
@@ -180,6 +181,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         detailModal: { isOpen: false, title: '', incidentIds: [] },
+      };
+
+    case 'LOAD_STORED_REPORT':
+      return {
+        ...state,
+        currentStep: 'report',
+        reportData: action.reportData,
+        routedIncidents: action.routedIncidents,
+        incidents: action.routedIncidents,
+        error: null,
       };
 
     case 'RESET':

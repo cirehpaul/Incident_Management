@@ -147,6 +147,12 @@ export async function exportAsPng(elementId: string, filename: string = 'sla-rep
       quality: 1.0,
       pixelRatio: 2.5,
       backgroundColor: '#ffffff',
+      filter: (node: HTMLElement) => {
+        if (node.classList && node.classList.contains('btn-save-report')) {
+          return false;
+        }
+        return true;
+      },
       style: {
         background: '#ffffff',
         backgroundColor: '#ffffff',

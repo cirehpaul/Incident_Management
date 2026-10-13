@@ -27,16 +27,38 @@ import {
 import { exportAsPng } from '@/lib/report/export';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
 
-import type { ColumnMapping } from '@/types/incident';
+import type { ColumnMapping, Incident } from '@/types/incident';
 import type { AgingReportData } from '@/types/aging';
 
 interface AgingReportWorkflowProps {
   account: Account;
   onBack: () => void;
+  initialReportData?: AgingReportData;
+  initialRoutedIncidents?: Incident[];
 }
 
-export function AgingReportWorkflow({ account, onBack }: AgingReportWorkflowProps) {
-  const [state, dispatch] = useReducer(agingReducer, agingInitialState);
+export function AgingReportWorkflow({
+  account,
+  onBack,
+  initialReportData,
+  initialRoutedIncidents,
+}: AgingReportWorkflowProps) {
+  const [state, dispatch] = useReducer(
+    agingReducer,
+    agingInitialState,
+    (baseState) => {
+      if (initialReportData) {
+        return {
+          ...baseState,
+          currentStep: 'report' as AgingStep,
+          reportData: initialReportData,
+          routedIncidents: initialRoutedIncidents || [],
+          incidents: initialRoutedIncidents || [],
+        };
+      }
+      return baseState;
+    }
+  );
 
   //FILE UPLOAD
   const handleFileSelected = useCallback(async (file: File) => {
@@ -262,9 +284,15 @@ export function AgingReportWorkflow({ account, onBack }: AgingReportWorkflowProp
             <div className="report-actions-bar">
               <button
                 className="btn btn-secondary"
-                onClick={() => dispatch({ type: 'SET_STEP', step: 'previous-week' })}
+                onClick={() => {
+                  if (!state.rawData) {
+                    onBack();
+                  } else {
+                    dispatch({ type: 'SET_STEP', step: 'previous-week' });
+                  }
+                }}
               >
-                ← Back
+                {state.rawData ? '← Back' : '← Back to Dashboard'}
               </button>
               <div className="report-export-buttons">
                 <ExportDropdown
@@ -278,7 +306,11 @@ export function AgingReportWorkflow({ account, onBack }: AgingReportWorkflowProp
               </div>
             </div>
 
-            <AgingReportTable data={state.reportData} onCellClick={handleCellClick} />
+            <AgingReportTable
+              data={state.reportData}
+              onCellClick={handleCellClick}
+              routedIncidents={state.routedIncidents}
+            />
           </div>
         )}
       </div>

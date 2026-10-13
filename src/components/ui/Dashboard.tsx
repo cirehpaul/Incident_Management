@@ -3,16 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import type { Account } from '@/lib/auth';
 import { isAdmin } from '@/lib/auth';
+import { StoredReportsList } from '@/components/report/StoredReportsList';
+import type { StoredReport } from '@/lib/storage/report-storage';
 
 export type DashboardView = 'dashboard' | 'weekly' | 'monthly' | 'triannual' | 'aging';
 
 interface DashboardProps {
   account: Account;
   onSelectReport: (view: DashboardView) => void;
+  onOpenStoredReport?: (report: StoredReport) => void;
   onLogout: () => void;
 }
 
-export function Dashboard({ account, onSelectReport, onLogout }: DashboardProps) {
+export function Dashboard({ account, onSelectReport, onOpenStoredReport, onLogout }: DashboardProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
@@ -162,6 +165,17 @@ export function Dashboard({ account, onSelectReport, onLogout }: DashboardProps)
                 </button>
               </article>
 
+            </div>
+
+            {/* Stored Reports Section */}
+            <div className="mt-10">
+              <StoredReportsList
+                onOpenReport={(report) => {
+                  if (onOpenStoredReport) {
+                    onOpenStoredReport(report);
+                  }
+                }}
+              />
             </div>
           </section>
         </main>

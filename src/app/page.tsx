@@ -25,13 +25,36 @@ import { calculateSLAReport, splitIncidentsByWeek, calculateWeeklyCompletion } f
 import { exportAsPng } from '@/lib/report/export';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
 
-import type { ColumnMapping } from '@/types/incident';
+import type { ColumnMapping, Incident } from '@/types/incident';
 import type { WeeklyReportData } from '@/types/sla';
+import type { AgingReportData } from '@/types/aging';
+import type { StoredReport } from '@/lib/storage/report-storage';
 
 export default function HomePage() {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>('dashboard');
+  const [agingStoredReport, setAgingStoredReport] = useState<{
+    data: AgingReportData;
+    incidents?: Incident[];
+  } | null>(null);
+
+  const handleOpenStoredReport = useCallback((storedReport: StoredReport) => {
+    if (storedReport.type === 'weekly') {
+      dispatch({
+        type: 'LOAD_STORED_REPORT',
+        reportData: storedReport.reportData as WeeklyReportData,
+        routedIncidents: storedReport.routedIncidents || [],
+      });
+      setActiveView('weekly');
+    } else if (storedReport.type === 'aging') {
+      setAgingStoredReport({
+        data: storedReport.reportData as AgingReportData,
+        incidents: storedReport.routedIncidents,
+      });
+      setActiveView('aging');
+    }
+  }, []);
 
   //FILE UPLOAD
   const handleFileSelected = useCallback(async (file: File) => {
@@ -145,6 +168,7 @@ export default function HomePage() {
       <Dashboard
         account={currentAccount}
         onSelectReport={(view) => setActiveView(view)}
+        onOpenStoredReport={handleOpenStoredReport}
         onLogout={() => {
           setCurrentAccount(null);
           setActiveView('dashboard');
@@ -196,9 +220,12 @@ export default function HomePage() {
       <AgingReportWorkflow
         account={currentAccount}
         onBack={() => {
+          setAgingStoredReport(null);
           setActiveView('dashboard');
           dispatch({ type: 'RESET' });
         }}
+        initialReportData={agingStoredReport?.data}
+        initialRoutedIncidents={agingStoredReport?.incidents}
       />
     );
   }
@@ -338,9 +365,15 @@ export default function HomePage() {
             <div className="report-actions-bar">
               <button
                 className="btn btn-secondary"
-                onClick={() => dispatch({ type: 'SET_STEP', step: 'previous-week' })}
+                onClick={() => {
+                  if (!state.rawData) {
+                    setActiveView('dashboard');
+                  } else {
+                    dispatch({ type: 'SET_STEP', step: 'previous-week' });
+                  }
+                }}
               >
-                ← Back
+                {state.rawData ? '← Back' : '← Back to Dashboard'}
               </button>
               <div className="report-export-buttons">
                 <ExportDropdown
@@ -354,7 +387,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            <SLAReportTable data={state.reportData} onCellClick={handleCellClick} />
+            <SLAReportTable
+              data={state.reportData}
+              onCellClick={handleCellClick}
+              routedIncidents={state.routedIncidents}
+            />
           </div>
         )}
       </div>

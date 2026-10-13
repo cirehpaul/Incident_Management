@@ -65,6 +65,7 @@ export type AgingAction =
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'OPEN_DETAIL_MODAL'; title: string; incidentIds: string[] }
   | { type: 'CLOSE_DETAIL_MODAL' }
+  | { type: 'LOAD_STORED_REPORT'; data: AgingReportData; incidents?: Incident[] }
   | { type: 'RESET' };
 
 function createEmptyPreviousWeekAging(): PreviousWeekAging {
@@ -163,6 +164,16 @@ export function agingReducer(state: AgingState, action: AgingAction): AgingState
       return {
         ...state,
         detailModal: { isOpen: false, title: '', incidentIds: [] },
+      };
+
+    case 'LOAD_STORED_REPORT':
+      return {
+        ...state,
+        currentStep: 'report',
+        reportData: action.data,
+        routedIncidents: action.incidents || [],
+        incidents: action.incidents || [],
+        error: null,
       };
 
     case 'RESET':
