@@ -31,7 +31,9 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
   };
 
   useEffect(() => {
-    const weeklyReports = getStoredReports().filter((r) => r.type === 'weekly');
+    const weeklyReports = getStoredReports().filter(
+      (r) => r.type === 'weekly' || (!r.type && 'currentWeek' in (r.reportData || {}))
+    );
     setStoredReports(weeklyReports);
 
     // If initial values have no inputs, auto-fill from the latest stored report if available
@@ -169,7 +171,7 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
                     . You can freely adjust any values below.
                   </>
                 ) : (
-                  'Select a previous stored report to automatically pull last week pass rates.'
+                  'Select a previous weekly report from Stored Reports Archive to automatically pull last week pass rates.'
                 )}
               </div>
             </div>
@@ -180,10 +182,10 @@ export function PreviousWeekInput({ initialValues, onSave, onBack, onProceed }: 
               onChange={(e) => handleSelectStoredReport(e.target.value)}
               className="prevweek-autofill-select"
             >
-              <option value="">-- Manual Entry / Pick Stored Report --</option>
+              <option value="">-- Manual Entry / Pick Weekly Stored Report --</option>
               {storedReports.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.period || r.title} ({r.savedAtFormatted})
+                  [Weekly SLA] {r.period || r.title} ({r.savedAtFormatted})
                 </option>
               ))}
             </select>

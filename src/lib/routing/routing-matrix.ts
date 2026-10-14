@@ -1,8 +1,3 @@
-/**
- * Routing Alignment Matrix
- * Master taxonomy matching Category, Sub Category, and Item to Auto Assigned Groups
- * and normalizing to report teams.
- */
 
 export interface RoutingMatrixEntry {
   category: string;
@@ -28,7 +23,7 @@ export const GROUP_TO_REPORT_TEAM: Record<string, string> = {
 };
 
 export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
-  // ── Facility & Environment Issues ──────────────────────────────
+  //  Facility & Environment Issues 
   {
     category: 'Facility & Environment Issues',
     subCategory: 'Facility Issue',
@@ -179,7 +174,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS ADMIN',
   },
 
-  // ── External Vendor / Third Party Issues ───────────────────────
+  //External Vendor / Third Party Issues
   {
     category: 'External Vendor / Third Party Issues',
     subCategory: 'Quality of Goods/Services',
@@ -237,7 +232,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS ADMIN',
   },
 
-  // ── Hardware Issues ─────────────────────────────────────────────
+  // Hardware Issues 
   {
     category: 'Hardware Issues',
     subCategory: 'Damage/Defective/Lost',
@@ -379,7 +374,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS PSD',
   },
 
-  // ── Operational Issues ──────────────────────────────────────────
+  // Operational Issues 
   {
     category: 'Operational Issues',
     subCategory: 'POS Services Operation',
@@ -459,7 +454,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS PSD',
   },
 
-  // ── Safety & Security Issues ────────────────────────────────────
+  // Safety & Security Issues 
   {
     category: 'Safety & Security Issues',
     subCategory: 'Physical Hazards',
@@ -549,7 +544,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS ADMIN',
   },
 
-  // ── Network Issues ──────────────────────────────────────────────
+  // Network Issues 
   {
     category: 'Network Issues',
     subCategory: 'Slow Connection',
@@ -599,7 +594,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS ISS',
   },
 
-  // ── Server Issues ───────────────────────────────────────────────
+  //  Server Issues 
   {
     category: 'Server Issues',
     subCategory: 'TIme & Date not synchronized',
@@ -633,7 +628,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     targetReportTeam: 'ECS ISS',
   },
 
-  // ── Software/Application Issues ─────────────────────────────────
+  // Software/Application Issues 
   {
     category: 'Software/Application Issues',
     subCategory: 'ISS Supported Applications',
@@ -719,22 +714,22 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     category: 'Software/Application Issues',
     subCategory: 'SDS Supported Applications',
     item: 'Repair System',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
+    autoAssignedGroup: 'ECS SDS',
+    targetReportTeam: 'ECS SDS',
   },
   {
     category: 'Software/Application Issues',
     subCategory: 'SDS Supported Applications',
     item: 'POS Profiling system',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
+    autoAssignedGroup: 'ECS SDS',
+    targetReportTeam: 'ECS SDS',
   },
   {
     category: 'Software/Application Issues',
     subCategory: 'SDS Supported Applications',
     item: 'ECS ISMS',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
+    autoAssignedGroup: 'ECS SDS',
+    targetReportTeam: 'ECS SDS',
   },
   {
     category: 'Software/Application Issues',
@@ -747,29 +742,8 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
     category: 'Software/Application Issues',
     subCategory: 'SDS Supported Applications',
     item: 'ECS PEARL',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
-  },
-  {
-    category: 'Software/Application Issues',
-    subCategory: 'SDS Supported Applications',
-    item: 'BDO PEARL',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
-  },
-  {
-    category: 'Software/Application Issues',
-    subCategory: 'SDS Supported Applications',
-    item: 'TID Gen',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
-  },
-  {
-    category: 'Software/Application Issues',
-    subCategory: 'SDS Supported Applications',
-    item: 'AIMS',
-    autoAssignedGroup: 'ECS ISMS Support Group',
-    targetReportTeam: 'ECS ISMS Support',
+    autoAssignedGroup: 'ECS SDS',
+    targetReportTeam: 'ECS SDS',
   },
   {
     category: 'Software/Application Issues',
@@ -862,7 +836,7 @@ export const ROUTING_MATRIX: RoutingMatrixEntry[] = [
   },
 ];
 
-/** Clean and normalize text for fuzzy/tolerant comparison */
+
 export function normalizeKey(text?: string | null): string {
   if (!text) return '';
   return text
@@ -872,9 +846,6 @@ export function normalizeKey(text?: string | null): string {
     .trim();
 }
 
-/**
- * Checks if an item string denotes "Not Applicable" or empty/none
- */
 function isNotApplicableItem(item?: string | null): boolean {
   if (!item) return true;
   const norm = normalizeKey(item);
@@ -887,13 +858,6 @@ function isNotApplicableItem(item?: string | null): boolean {
   );
 }
 
-/**
- * Find matching matrix entry using Category, Sub Category, and Item.
- * Implements hierarchical matching:
- * 1. Category + Sub Category + Item
- * 2. Category + Sub Category (if item is N/A or empty or subcategory has default)
- * 3. Fallback based on Category alone if entire category maps to a single group
- */
 export function lookupRoutingMatrix(
   category?: string,
   subCategory?: string,

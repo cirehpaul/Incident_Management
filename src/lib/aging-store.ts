@@ -1,7 +1,3 @@
-/**
- * Aging Module State Store
- * Separate state management for the Aging Trends workflow
- */
 
 import type { Incident, ValidationSummary, ColumnMapping } from '@/types/incident';
 import type { RoutingConfig, RoutingSummary } from '@/types/routing';

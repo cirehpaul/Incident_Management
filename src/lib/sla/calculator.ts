@@ -2,16 +2,9 @@ import type { Incident } from '@/types/incident';
 import type { TeamSLAResult, SLAReport, WeeklyCompletion } from '@/types/sla';
 import { REPORT_TEAMS } from '@/lib/routing/routing-engine';
 
-/**
- * Standard Priority Levels from ServiceDesk Plus (SDP)
- * P1 (Critical), P2 (High), P3 (Medium), P4 (Low)
- */
+
 export type PriorityLevel = 'P1' | 'P2' | 'P3' | 'P4';
 
-/**
- * Parses raw priority string into standard P1, P2, P3, P4.
- * Handles formats like: "P1", "P1 - Critical", "Critical", "1", "1 - Critical", etc.
- */
 export function parsePriority(priorityStr?: string | number | null): PriorityLevel {
   if (priorityStr === undefined || priorityStr === null) return 'P3';
   const str = String(priorityStr).trim().toLowerCase();
@@ -58,13 +51,6 @@ export function parsePriority(priorityStr?: string | number | null): PriorityLev
   return 'P3';
 }
 
-/**
- * SLA Prioritization Matrix (SDP)
- * P1 (Critical): Response Time 15 mins, Resolution Time 4 hours
- * P2 (High): Response Time 30 mins, Resolution Time 24 hours
- * P3 (Medium): Response Time 4 hours, Resolution Time 3 days
- * P4 (Low): Response Time 8 hours, Resolution Time 5 days
- */
 export const SLA_THRESHOLDS = {
   firstResponse: {
     P1: 15,          // 15 mins
@@ -91,9 +77,6 @@ export function getSLAThreshold(
   return SLA_THRESHOLDS[type][p];
 }
 
-/**
- * Business hours calculation: 8:30 AM to 5:30 PM (17:30), Monday to Friday.
- */
 export function getBusinessMinutes(start: Date, end: Date): number {
   if (start >= end) return 0;
 
@@ -120,11 +103,7 @@ export function getBusinessMinutes(start: Date, end: Date): number {
   return totalMinutes;
 }
 
-/**
- * Checks if raw SDP overdue status field explicitly indicates overdue / breached.
- * In ServiceDesk Plus, column "Overdue Status" = TRUE means OVERDUE (FAILED).
- * Value FALSE means NOT OVERDUE (PASSED).
- */
+// Ticket validation
 export function isStatusOverdue(value: unknown): boolean | null {
   if (value === undefined || value === null) return null;
   const str = String(value).trim().toLowerCase();

@@ -11,7 +11,7 @@ export interface Account {
 export const ACCOUNTS: Account[] = [
   {
     id: 'smac-admin',
-    name: 'SMAC ADMIN',
+    name: 'SMAC',
     role: 'admin',
     pin: '1234',
   },

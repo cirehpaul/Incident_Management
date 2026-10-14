@@ -41,7 +41,7 @@ export function StoredReportsList({ onOpenReport }: StoredReportsListProps) {
               Stored Reports Archive
             </h3>
             <p className="m-0 text-xs text-slate-300">
-              Access and view previously saved reports directly in the Report view.
+              Access and view previously generated reports here.
             </p>
           </div>
         </div>
@@ -55,7 +55,7 @@ export function StoredReportsList({ onOpenReport }: StoredReportsListProps) {
           <div className="text-3xl mb-2">📂</div>
           <p className="text-sm font-medium text-slate-300">No reports stored yet</p>
           <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-            When you generate a Weekly SLA or Aging report, click the{' '}
+            When you generate a report, click the{' '}
             <span className="text-emerald-400 font-semibold">💾 Save Report</span> button in the
             footer to save and store it here.
           </p>
@@ -72,11 +72,10 @@ export function StoredReportsList({ onOpenReport }: StoredReportsListProps) {
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
-                      className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
-                        isWeekly
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      }`}
+                      className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${isWeekly
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        }`}
                     >
                       {isWeekly ? 'Weekly SLA' : 'Aging Trend'}
                     </span>

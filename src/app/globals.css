@@ -1,8 +1,3 @@
-/* ============================================================
-   WEEKLY SLA REPORT GENERATOR — Global Styles
-   ============================================================ */
-
-/* ─── CSS VARIABLES ──────────────────────────────────────── */
 :root {
   /* Brand */
   --color-primary: #1a56db;
@@ -74,7 +69,9 @@
 }
 
 /* ─── RESET ──────────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -405,8 +402,15 @@ body {
 }
 
 @keyframes dropdownFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .export-dropdown-item {
@@ -540,7 +544,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─── REPORT PERIOD INPUT ────────────────────────────────── */
@@ -661,11 +667,25 @@ body {
   margin-top: 4px;
 }
 
-.stat-total .stat-value { color: var(--color-primary); }
-.stat-valid .stat-value { color: var(--success); }
-.stat-invalid .stat-value { color: var(--error); }
-.stat-reassigned .stat-value { color: var(--warning); }
-.stat-unchanged .stat-value { color: var(--success); }
+.stat-total .stat-value {
+  color: var(--color-primary);
+}
+
+.stat-valid .stat-value {
+  color: var(--success);
+}
+
+.stat-invalid .stat-value {
+  color: var(--error);
+}
+
+.stat-reassigned .stat-value {
+  color: var(--warning);
+}
+
+.stat-unchanged .stat-value {
+  color: var(--success);
+}
 
 .validation-section {
   margin-bottom: var(--space-xl);
@@ -678,8 +698,13 @@ body {
   color: var(--text-primary);
 }
 
-.text-error { color: var(--error); }
-.text-warning { color: var(--warning); }
+.text-error {
+  color: var(--error);
+}
+
+.text-warning {
+  color: var(--warning);
+}
 
 .tag-list {
   display: flex;
@@ -729,7 +754,9 @@ body {
   gap: var(--space-md);
 }
 
-.issue-row:last-child { border-bottom: none; }
+.issue-row:last-child {
+  border-bottom: none;
+}
 
 .issue-error {
   background: rgba(239, 68, 68, 0.05);
@@ -821,9 +848,17 @@ body {
   font-weight: 600;
 }
 
-.stat-total .stat-value { color: #60a5fa; }
-.stat-reassigned .stat-value { color: #f59e0b; }
-.stat-unchanged .stat-value { color: #10b981; }
+.stat-total .stat-value {
+  color: #60a5fa;
+}
+
+.stat-reassigned .stat-value {
+  color: #f59e0b;
+}
+
+.stat-unchanged .stat-value {
+  color: #10b981;
+}
 
 .filter-btn {
   padding: 6px 16px;
@@ -886,7 +921,9 @@ body {
   vertical-align: middle;
 }
 
-.routing-table tr:last-child td { border-bottom: none; }
+.routing-table tr:last-child td {
+  border-bottom: none;
+}
 
 .routing-table tr:hover td {
   background: rgba(255, 255, 255, 0.03);
@@ -1321,11 +1358,31 @@ body {
 }
 
 /* SLA percentage colors */
-.sla-excellent { color: #00b050; font-weight: 700; }
-.sla-good { color: #548235; font-weight: 600; }
-.sla-warning { color: #bf8f00; font-weight: 700; }
-.sla-critical { color: #c00000; font-weight: 700; background: #fce4ec; }
-.sla-na { color: #808080; font-style: italic; }
+.sla-excellent {
+  color: #00b050;
+  font-weight: 700;
+}
+
+.sla-good {
+  color: #548235;
+  font-weight: 600;
+}
+
+.sla-warning {
+  color: #bf8f00;
+  font-weight: 700;
+}
+
+.sla-critical {
+  color: #c00000;
+  font-weight: 700;
+  background: #fce4ec;
+}
+
+.sla-na {
+  color: #808080;
+  font-style: italic;
+}
 
 /* Total Row */
 .report-total-row td {
@@ -1385,8 +1442,13 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -1403,8 +1465,15 @@ body {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -1485,6 +1554,7 @@ body {
 
 /* ─── PRINT STYLES ───────────────────────────────────────── */
 @media print {
+
   .app-header,
   .stepper-container,
   .report-actions-bar,
@@ -1565,13 +1635,20 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   backdrop-filter: blur(24px);
-  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255,255,255,0.05) inset;
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   animation: pin-card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes pin-card-in {
-  from { opacity: 0; transform: translateY(24px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Brand section */
@@ -1637,10 +1714,27 @@ body {
 }
 
 @keyframes pin-shake {
-  10%, 90% { transform: translateX(-3px); }
-  20%, 80% { transform: translateX(5px); }
-  30%, 50%, 70% { transform: translateX(-6px); }
-  40%, 60% { transform: translateX(6px); }
+
+  10%,
+  90% {
+    transform: translateX(-3px);
+  }
+
+  20%,
+  80% {
+    transform: translateX(5px);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translateX(-6px);
+  }
+
+  40%,
+  60% {
+    transform: translateX(6px);
+  }
 }
 
 /* Error message */
@@ -1653,8 +1747,15 @@ body {
 }
 
 @keyframes pin-fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Keypad grid */
@@ -1888,9 +1989,17 @@ body {
 }
 
 @media (max-width: 900px) {
-  .db-cards-grid { grid-template-columns: 1fr; }
-  .db-topbar-inner { padding: 0 1rem; }
-  .db-page-wrap { padding: 1.5rem 1rem 2.5rem; }
+  .db-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-topbar-inner {
+    padding: 0 1rem;
+  }
+
+  .db-page-wrap {
+    padding: 1.5rem 1rem 2.5rem;
+  }
 }
 
 /* ─── Report card ────────────────────────────────────────── */
@@ -1901,15 +2010,22 @@ body {
   padding: 1.5rem;
   border-radius: 18px;
   border: 1px solid #263a57;
-  background: linear-gradient(145deg, rgba(20,37,63,0.96), rgba(13,27,47,0.96));
-  box-shadow: 0 18px 38px rgba(0,0,0,0.18);
+  background: linear-gradient(145deg, rgba(20, 37, 63, 0.96), rgba(13, 27, 47, 0.96));
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   animation: db-rise 0.35s ease both;
 }
 
 @keyframes db-rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .db-report-card:hover {
@@ -1942,9 +2058,17 @@ body {
   font-size: 1.25rem;
 }
 
-.db-icon-blue   { background: rgba(59, 130, 246, 0.15); }
-.db-icon-violet { background: rgba(139, 92, 246, 0.15); }
-.db-icon-cyan   { background: rgba(6, 182, 212, 0.15); }
+.db-icon-blue {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.db-icon-violet {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.db-icon-cyan {
+  background: rgba(6, 182, 212, 0.15);
+}
 
 .db-selection-badge {
   display: flex;
@@ -1976,9 +2100,17 @@ body {
   letter-spacing: 0.12em;
 }
 
-.db-kicker-blue   { color: #7dd3fc; }
-.db-kicker-violet { color: #c4b5fd; }
-.db-kicker-cyan   { color: #67e8f9; }
+.db-kicker-blue {
+  color: #7dd3fc;
+}
+
+.db-kicker-violet {
+  color: #c4b5fd;
+}
+
+.db-kicker-cyan {
+  color: #67e8f9;
+}
 
 .db-card-title {
   margin: 0.5rem 0 0;
@@ -2117,9 +2249,23 @@ body {
   font-weight: 700;
 }
 
-.aging-sub-failed { background: #c00000 !important; color: #ffffff !important; font-weight: 600; }
-.aging-sub-passed { background: #548235 !important; color: #ffffff !important; font-weight: 600; }
-.aging-sub-sla { background: #1f4e79 !important; color: #ffffff !important; font-weight: 600; }
+.aging-sub-failed {
+  background: #c00000 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.aging-sub-passed {
+  background: #548235 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.aging-sub-sla {
+  background: #1f4e79 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
 
 .aging-cell-tech {
   background: #d6e4f0;
@@ -2151,9 +2297,18 @@ body {
   color: #000000 !important;
 }
 
-.aging-total-label { text-align: left !important; padding-left: 12px !important; }
-.aging-total-val { font-weight: 700; }
-.aging-total-sla { font-weight: 800; }
+.aging-total-label {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.aging-total-val {
+  font-weight: 700;
+}
+
+.aging-total-sla {
+  font-weight: 800;
+}
 
 /* --- Aging Distribution Table ----------------------------- */
 .aging-dist-main-header {
@@ -2173,8 +2328,15 @@ body {
   color: #000000 !important;
 }
 
-.aging-week-label { font-weight: 700; font-size: 0.9rem; }
-.aging-week-sub { font-weight: 400; font-size: 0.75rem; }
+.aging-week-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.aging-week-sub {
+  font-weight: 400;
+  font-size: 0.75rem;
+}
 
 .aging-bucket-header {
   background: #4472c4 !important;
@@ -2348,4 +2510,3 @@ body {
 .btn-save-report .save-icon {
   font-size: 0.95rem !important;
 }
-

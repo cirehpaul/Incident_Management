@@ -22,7 +22,9 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   useEffect(() => {
-    const agingReports = getStoredReports().filter((r) => r.type === 'aging');
+    const agingReports = getStoredReports().filter(
+      (r) => r.type === 'aging' || (!r.type && 'agingRows' in (r.reportData || {}))
+    );
     setStoredReports(agingReports);
 
     // If initial values have no inputs, auto-fill from latest stored report if available
@@ -122,8 +124,8 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
       <div className="prevweek-header">
         <h2>Previous Week Aging Totals</h2>
         <p className="prevweek-description">
-          Please manually enter the total aging IR counts from the previous week's report.
-          This data cannot be auto-calculated, as it relies on the exact snapshot of tickets that were open last week.
+          The total aging IR counts are automatically calculated based on the available ticket data.
+          Review the values below to ensure they accurately reflect the previous week’s report.
         </p>
       </div>
 
@@ -133,20 +135,20 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
             <span className="prevweek-autofill-icon">💡</span>
             <div>
               <div className="prevweek-autofill-title">
-                {selectedReportId ? 'Auto-filled from Stored Report' : 'Auto-fill from Stored Reports'}
+                {selectedReportId ? 'Retrieve Last Week’s SLA Rates' : 'Retrieve Last Week’s SLA Rates'}
               </div>
               <div className="prevweek-autofill-sub">
                 {selectedReportId ? (
                   <>
-                    Loaded previous week aging totals from{' '}
+                    'You have successfully retrieved last week’s SLA rates from:'
                     <strong>
                       {storedReports.find((r) => r.id === selectedReportId)?.period ||
                         storedReports.find((r) => r.id === selectedReportId)?.title}
                     </strong>
-                    . You can freely adjust any values below.
+                    '. You can freely adjust any values below.'
                   </>
                 ) : (
-                  'Select a previous stored report to automatically pull last week total aging counts.'
+                  'Select a previous aging report from Stored Reports Archive to automatically pull last week’s aging IRs.'
                 )}
               </div>
             </div>
@@ -157,10 +159,10 @@ export function AgingPreviousWeekInput({ initialValues, onSave, onBack, onProcee
               onChange={(e) => handleSelectStoredReport(e.target.value)}
               className="prevweek-autofill-select"
             >
-              <option value="">-- Manual Entry / Pick Stored Report --</option>
+              <option value="">-- Manual Entry / Pick Aging Stored Report --</option>
               {storedReports.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.period || r.title} ({r.savedAtFormatted})
+                  [Aging Trend] {r.period || r.title} ({r.savedAtFormatted})
                 </option>
               ))}
             </select>

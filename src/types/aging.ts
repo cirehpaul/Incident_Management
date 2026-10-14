@@ -1,7 +1,3 @@
-/**
- * Aging Trends Types
- * Data structures for the Aging Incident Report module
- */
 
 /** Aging time bucket identifiers (from oldest to newest) */
 export type AgingBucket = '>1month' | '2-4weeks' | '1-2weeks' | '4-6days' | '1-3days' | 'sameday';

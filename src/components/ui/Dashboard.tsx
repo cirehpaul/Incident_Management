@@ -84,8 +84,15 @@ export function Dashboard({ account, onSelectReport, onOpenStoredReport, onLogou
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={onLogout} className="rounded-full border border-blue-400/25 bg-blue-400/10 px-3 py-1 text-[11px] font-semibold text-blue-200 hover:bg-blue-400/20" title="Click to log out">
-                👤 {account.name} {isAdmin(account) && ' (Admin)'}
+              <button
+                onClick={onLogout}
+                className="header-user-badge"
+                title="Click to log out"
+              >
+                👤 {account.name}
+                {isAdmin(account) && (
+                  <span className="badge-role">Admin</span>
+                )}
               </button>
             </div>
           </div>

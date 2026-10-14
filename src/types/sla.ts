@@ -1,7 +1,3 @@
-/**
- * SLA Types
- * SLA calculation and aggregation types
- */
 
 /** SLA result for a single team in one category */
 export interface TeamSLAResult {

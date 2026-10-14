@@ -1,8 +1,3 @@
-/**
- * Core Incident Types
- * Normalized internal data model for incident processing
- */
-
 /** Raw data as parsed directly from Excel/CSV */
 export interface RawIncidentRow {
   [key: string]: string | number | undefined;

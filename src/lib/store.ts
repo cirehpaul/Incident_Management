@@ -1,7 +1,4 @@
-/**
- * Application State Store
- * Central state management using React Context + useReducer
- */
+
 import type { Incident, ValidationSummary, ColumnMapping } from '@/types/incident';
 import type { RoutingConfig, RoutingSummary } from '@/types/routing';
 import type { SLAReport, PreviousWeekSLA, WeeklyReportData } from '@/types/sla';

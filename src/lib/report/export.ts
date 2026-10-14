@@ -4,10 +4,6 @@ import type { Incident } from '@/types/incident';
 import type { WeeklyReportData } from '@/types/sla';
 import type { AgingReportData } from '@/types/aging';
 
-/**
- * Builds the extract file rows: preserves 100% of the original raw data,
- * and updates the re-assigned team/technician based on the calculator routing.
- */
 export function buildExtractedIncidentRows(incidents: Incident[]): Record<string, unknown>[] {
   return incidents.map((inc) => {
     // Preserve the exact raw data uploaded
